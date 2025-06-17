@@ -7,10 +7,12 @@
 
 import SwiftUI
 
+// Creates the tabs on the bottom
 struct HomeView: View {
     @State var selectedTab = 0
     @State var time = ""
     var body: some View {
+        // Creates a a tabview, this is the options on the bottom
         TabView (selection: $selectedTab) {
             InputView(selectedTab: $selectedTab, time: $time)
                 .tabItem{
@@ -20,49 +22,115 @@ struct HomeView: View {
             DataView(time: $time)
                 .tabItem {
                     Label("View Data", systemImage: "chart.pie.fill")
-                        }
-                .tag(1)
                 }
-        }
-    }
-
-struct InputView: View {
-    @Binding var selectedTab: Int
-    @Binding var time: String
-    @State private var message = ""
-    var body: some View {
-        VStack(spacing: 20) {
-            TextField("Enter some data to begin", text: $time)
-                .textFieldStyle(.roundedBorder)
-                .padding()
-            Button {
-                let intTime = Int(time) ?? 0
-                message = "\(intTime) saved"
-                selectedTab = 1
-            } label: {
-                Text("Confirm")
-            }
-            .buttonStyle(.bordered)
-            Text(message)
-        
-            }
-        }
-    }
-
-
-struct DataView: View {
-    @Binding var time: String
-    var body: some View {
-        if time == "0" {
-            Text("Please enter some hours")
-        } else {
-            let yearlyTime = (Int(time) ?? 0) * 365
-            Text("At this rate you will spend \(yearlyTime) hours on your phone this year")
-            
+                .tag(1)
         }
     }
 }
 
+
+struct InputView: View {
+    @Binding var selectedTab: Int
+    @Binding var time: String
+    @State private var showTabs = true
+    @State private var message = ""
+    @State private var date = Date()
+    
+    var body: some View {
+        NavigationStack{
+            VStack {
+                Form {
+                    Section ("Screen Time") {
+                        LabeledContent {
+                            TextField("Screentime (Hours)", text: $time)
+                                .multilineTextAlignment(.trailing)
+                        } label: {
+                            Text("Hours:")
+                        }
+                        DatePicker("Date",
+                                   selection: $date,
+                                   displayedComponents: [.date])
+                        Button {
+                            let intTime = Int(time) ?? 0
+                            message = "\(intTime) saved"
+                            selectedTab = 1
+                        } label: {
+                            Text("Confirm")
+                        }.frame(maxWidth: .infinity)
+                    }
+                }
+                .navigationTitle("Input Data")
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .toolbar{
+                    ToolbarItem(placement: .navigationBarLeading) { NavigationLink(
+                        destination: AccountView()){
+                            Image(systemName: "person.crop.circle.fill")
+                        }
+                    }
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        NavigationLink(
+                            destination: HelpView()){
+                                Image(systemName: "questionmark")
+                            }
+                    }
+                }
+            }
+        }
+    }
+}
+  
+
+struct DataView: View {
+    @Binding var time: String
+    var body: some View {
+        NavigationView {
+            VStack {
+            let yearlyTime = (Int(time) ?? 0 ) * 365
+            if yearlyTime == 0 {
+                Text("Please enter some hours")
+            } else {
+                Text("At this rate you will spend \(yearlyTime) hours on your phone this year")
+            }
+        }
+        .navigationTitle("Data")
+        .toolbar{
+            ToolbarItem(placement: .navigationBarLeading) { NavigationLink(
+                destination: AccountView()){
+                    Image(systemName: "person.crop.circle.fill")
+                }
+            }
+            ToolbarItem(placement: .navigationBarTrailing) {
+                NavigationLink(
+                    destination: HelpView()){
+                        Image(systemName: "questionmark")
+                    }
+            }
+            }
+        }
+    }
+}
+
+
+struct AccountView: View {
+    var body: some View {
+        VStack{
+            Text("")
+            .navigationTitle("Account Details")
+        }
+        
+    }
+}
+
+
+
+struct HelpView: View {
+    var body: some View {
+        VStack{
+            Text("")
+            .navigationTitle("Help")
+        }
+    }
+}
 
 #Preview {
     HomeView()
