@@ -6,6 +6,8 @@
 //
 
 import SwiftUI
+import Charts
+import CoreData
 
 // Creates the tabs on the bottom
 struct HomeView: View {
@@ -30,11 +32,13 @@ struct HomeView: View {
 
 
 struct InputView: View {
+    @Environment(\.managedObjectContext) private var viewContext
+    
     @Binding var selectedTab: Int
     @Binding var time: String
     @State private var showTabs = true
     @State private var message = ""
-    @State private var date = Date()
+    @State private var selectedDate = Date()
     
     var body: some View {
         NavigationStack{
@@ -45,15 +49,14 @@ struct InputView: View {
                             TextField("Screentime (Hours)", text: $time)
                                 .multilineTextAlignment(.trailing)
                         } label: {
-                            Text("Hours:")
+                            Text("Hours")
                         }
                         DatePicker("Date",
-                                   selection: $date,
+                                   selection: $selectedDate,
                                    displayedComponents: [.date])
                         Button {
-                            let intTime = Int(time) ?? 0
-                            message = "\(intTime) saved"
                             selectedTab = 1
+                            addData()
                         } label: {
                             Text("Confirm")
                         }.frame(maxWidth: .infinity)
@@ -75,6 +78,16 @@ struct InputView: View {
                     }
                 }
             }
+        }
+    }
+    func addData() {
+        let newData = Screentime(context: viewContext)
+        newData.date = selectedDate
+        newData.hours = Int64(time) ?? 0
+        do {
+            try viewContext.save()
+        } catch {
+    
         }
     }
 }
