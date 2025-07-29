@@ -162,9 +162,10 @@ struct InputView: View {
 
 struct mainToolbar: ToolbarContent {
     var body: some ToolbarContent {
-        ToolbarItem(placement: .navigationBarLeading) { NavigationLink(
-            destination: AccountView()){
-                Image(systemName: "person.crop.circle.fill")
+        ToolbarItem(placement: .navigationBarLeading) {
+            NavigationLink(
+            destination: SettingsView()){
+                Image(systemName: "gear")
             }
         }
         ToolbarItem(placement: .navigationBarTrailing) {
@@ -183,6 +184,63 @@ struct pChartData: Identifiable {
 }
 
 struct DataView: View {
+    var body: some View {
+        NavigationStack{
+            Form{
+                Section{
+                    LabeledContent {
+                        NavigationLink(destination: DailyAnalysis()){}
+                    } label: {
+                        Text("Daily Analysis")
+                            .font(.title2)
+                        // Image(systemName: "24.circle.fill")
+                    }
+                }
+                .frame(height: 150)
+                
+                Section{
+                    LabeledContent {
+                        NavigationLink(destination: DataTrends()){}
+                    } label: {
+                        Text("Lifetime Usage")
+                            .font(.title2)
+                        // Image(systemName: "24.circle.fill")
+                    }
+                }
+                .frame(height: 150)
+                
+                Section{
+                    LabeledContent {
+                        NavigationLink(destination: FunFacts()){}
+                    } label: {
+                        Text("Fun Facts")
+                            .font(.title2)
+                        // Image(systemName: "24.circle.fill")
+                    }
+                }
+                .frame(height: 150)
+            }
+            .navigationTitle("View Data")
+            .toolbar{ mainToolbar()}
+        }
+    }
+}
+
+
+struct FunFacts: View{
+    var body: some View{
+        Text("Fun facts coming")
+    }
+}
+
+struct DataTrends: View{
+    var body: some View{
+        Text("Trends coming")
+    }
+}
+
+
+struct DailyAnalysis: View {
     @Environment(\.managedObjectContext) private var viewContext
     
     @FetchRequest(
@@ -213,81 +271,91 @@ struct DataView: View {
         
         var screenTimeDouble: Double {
             var total: Double = 0
-               for entry in screenTimeToday {
-                   total += entry.screentime
-               }
-               return Double(total)
+            for entry in screenTimeToday {
+                total += entry.screentime
+            }
+            return Double(total)
         }
         
-        var averageSleep: Double = 8
+        var sleepTimeToday: [DailyData] {
+            return todayData.filter { data in
+                return data.sleeptime > 0
+            }
+        }
+        
+        var sleepTimeDouble: Double {
+            var total: Double = 0
+            for entry in sleepTimeToday {
+                total += entry.sleeptime
+            }
+            return Double(total)
+        }
+        
         var averageNecessities: Double = 2.5
         
         var pCatagories: [pChartData] { [
             .init(category: "Screentime", hours: screenTimeDouble),
-            .init(category: "Sleep", hours: averageSleep),
+            .init(category: "Sleep", hours: sleepTimeDouble),
             .init(category: "Necessities", hours: averageNecessities),
-            .init(category: "Other", hours: 24 - screenTimeDouble - averageSleep - averageNecessities)
+            .init(category: "Other", hours: 24 - screenTimeDouble - sleepTimeDouble - averageNecessities)
         ]
         }
         
-        return NavigationView {
-            VStack {
-                HStack{
-                    Button {
-                        wantedDate = Calendar.current.date(byAdding: .day, value: -1, to: wantedDate)!
-                        
-                    } label: {
-                        Image(systemName: "arrowshape.left.fill")
-                    }
-                    DatePicker("", selection: $wantedDate, displayedComponents: [.date])
-                        .labelsHidden()
-                    Button {
-                        wantedDate = Calendar.current.date(byAdding: .day, value: 1, to: wantedDate)!
-                        
-                    } label: {
-                        Image(systemName: "arrowshape.right.fill")
-                    }
-                }
-                VStack(spacing: 1) {
+        return VStack {
+            HStack{
+                Button {
+                    wantedDate = Calendar.current.date(byAdding: .day, value: -1, to: wantedDate)!
                     
-                    Chart(pCatagories) { category in
-                        SectorMark(
-                            angle: .value(Text(verbatim: category.category), category.hours), innerRadius: .ratio(0.5),
-                            angularInset: 2
-                        )
-                        
-                        .foregroundStyle(by: .value(Text(verbatim: category.category), category.category))
-                        .annotation(position: .overlay) {
-                            Text("\(String(format: "%.0f", category.hours * 100/24))% (\(String(format: "%.1f", category.hours))h)")
-                                .foregroundStyle(.white)
-                                .font(.system(size:12))
-                    }
-            
-                    }
-                    .padding(.bottom, -10)
+                } label: {
+                    Image(systemName: "arrowshape.left.fill")
                 }
-                .padding(35)
-                
-                    /*
-                     List(todayData) { entry in
-                         Text("Hours: \(String(format: "%.1f", entry.hours))")
-                     Text("Date: \(entry.date?.formatted() ?? "Unknown")")
-                     }
-                     */
-                
-                .navigationTitle("Data")
-                .toolbar{mainToolbar()}
+                DatePicker("", selection: $wantedDate, displayedComponents: [.date])
+                    .labelsHidden()
+                Button {
+                    wantedDate = Calendar.current.date(byAdding: .day, value: 1, to: wantedDate)!
+                    
+                } label: {
+                    Image(systemName: "arrowshape.right.fill")
+                }
             }
+            VStack(spacing: 1) {
+                
+                Chart(pCatagories) { category in
+                    SectorMark(
+                        angle: .value(Text(verbatim: category.category), category.hours), innerRadius: .ratio(0.5),
+                        angularInset: 2
+                    )
+                    
+                    .foregroundStyle(by: .value(Text(verbatim: category.category), category.category))
+                    .annotation(position: .overlay) {
+                        Text("\(String(format: "%.0f", category.hours * 100/24))% (\(String(format: "%.1f", category.hours))h)")
+                            .foregroundStyle(.white)
+                            .font(.system(size:12))
+                    }
+                    
+                }
+                .padding(.bottom, -10)
+            }
+            .padding(35)
+            
+            /*
+             List(todayData) { entry in
+             Text("Hours: \(String(format: "%.1f", entry.hours))")
+             Text("Date: \(entry.date?.formatted() ?? "Unknown")")
+             }
+             */
+            
+            .navigationTitle("Daily Insights")
         }
     }
 }
 
 
-struct AccountView: View {
+struct SettingsView: View {
     var body: some View {
         VStack{
             Text("")
-            .navigationTitle("Account Details")
+            .navigationTitle("Settings")
         }
         
     }
