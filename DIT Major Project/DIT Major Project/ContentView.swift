@@ -38,7 +38,9 @@ struct InputView: View {
     @State private var showTabs = true
     @State private var message = ""
     @State private var selectedDate = Date()
-    @State var showAlert = false
+    @State var showErrorAlert = false
+    @State var showConfirmAlert = false
+    @State var confirmBanner = false
     @State var hoursAsleep = 8
     @State var minutesAsleep = 0
     
@@ -66,7 +68,7 @@ struct InputView: View {
             .frame(height: 80)
     }
     
-    var tooManyHours: Bool {
+    var invalidHours: Bool {
         if (Double(time) ?? 0) > 24 || (Double(time) ?? 0) < 0 {
             return true
         } else {
@@ -76,43 +78,70 @@ struct InputView: View {
     
     var body: some View {
         NavigationStack{
-            VStack {
-                Form {
-                    Section ("Screen Time") {
-                        LabeledContent {
-                            TextField("Screentime (Hours)", text: $time)
-                                .multilineTextAlignment(.trailing)
+            ZStack{
+                VStack {
+                    Form {
+                        Section ("Screen Time") {
+                            LabeledContent {
+                                TextField("Screentime (Hours)", text: $time)
+                                    .multilineTextAlignment(.trailing)
+                            } label: {
+                                Text("Hours")
+                            }
+                            DatePicker("Date",
+                                       selection: $selectedDate,
+                                       displayedComponents: [.date])
+                        }
+                        Section ("Other") {
+                            HStack{
+                                LabeledContent(content: { sleepPicker }, label: { Text("Sleep") })
+                            }
+                        }
+                        Button {
+                            if !invalidHours {
+                                showConfirmAlert = true
+                            } else {
+                                showErrorAlert = true
+                            }
                         } label: {
-                            Text("Hours")
-                        }
-                        DatePicker("Date",
-                                   selection: $selectedDate,
-                                   displayedComponents: [.date])
+                            Text("Confirm")
+                        }.frame(maxWidth: .infinity)
                     }
-                    Section ("Other") {
-                        HStack{
-                        LabeledContent(content: { sleepPicker }, label: { Text("Sleep") })
-                        }
-                    }
-                    Button {
-                        if !tooManyHours {
-                            selectedTab = 1
-                            addData()
-                        } else {
-                            showAlert = true
-                        }
-                    } label: {
-                        Text("Confirm")
-                    }.frame(maxWidth: .infinity)
+                    .navigationTitle("Input Data")
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .toolbar{ mainToolbar()}
                 }
-                .navigationTitle("Input Data")
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .toolbar{ mainToolbar()}
-            }
-            .alert("Invalid Hours", isPresented: $showAlert) {
-                Button("Ok", role: .cancel) {}
-            } message: {
-                Text("Please enter a valid value")
+                .alert("Are you sure you want to save this data?", isPresented: $showConfirmAlert){
+                    Button("No", role:.cancel){}
+                    Button("Yes"){
+                        addData()
+                        confirmBanner = true
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+                            confirmBanner = false
+                            selectedTab = 1
+                        }
+                    }
+                }
+                .alert("Invalid Hours", isPresented: $showErrorAlert) {
+                    Button("Ok", role: .cancel) {}
+                } message: {
+                    Text("Please enter a valid value")
+                }
+                if confirmBanner {
+                    VStack{
+                        ZStack{
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(Color.gray.opacity(0.199))
+                                .frame(width: 130, height: 100)
+                            VStack {
+                                Text("Data Saved")
+                                    .foregroundStyle(.gray)
+                                Image(systemName: "checkmark.icloud.fill")
+                                    .foregroundStyle(.gray)
+                            }
+                        }
+                    }
+                }
             }
         }
     }
@@ -277,10 +306,9 @@ struct HelpView: View {
 
 #Preview {
     let context = PersistenceController.preview.container.viewContext
-    
     let sample = DailyData(context: context)
     let sample2 = DailyData(context: context)
-    let components = DateComponents(year: 2025, month: 7, day: 23)
+    let components = DateComponents(year: 2025, month: 7, day: 29)
     sample.date = Date()
     sample.screentime = Double(5)
     sample2.date = Calendar.current.date(from: components)!
