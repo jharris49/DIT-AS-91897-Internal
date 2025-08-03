@@ -68,15 +68,36 @@ struct InputView: View {
             .frame(height: 80)
     }
     
-    var invalidHours: Bool {
-        if (Double(time) ?? 0) > 24 || (Double(time) ?? 0) < 0 {
-            return true
-        } else {
-            return false
-        }
+    var totalTimeAsleep: Double {
+        Double(hoursAsleep) + Double(minutesAsleep)/60
     }
     
     var body: some View {
+        
+        var notDigit: Bool {
+            for character in time {
+                if character.isNumber || character == "."{
+                    continue
+                }
+                return true
+            }
+            return false
+        }
+        
+        var invalidHours: Bool {
+            if (Double(time) ?? 0) > 24 || (Double(time) ?? 0) < 0 {
+                return true
+            } else if (Double(time) ?? 0) + totalTimeAsleep > 24 {
+                return true
+            } else if notDigit {
+                return true
+            } else if time.isEmpty {
+                return true
+            } else {
+                return false
+            }
+        }
+        
         NavigationStack{
             ZStack{
                 VStack {
@@ -146,7 +167,6 @@ struct InputView: View {
         }
     }
     func addData() {
-        let totalTimeAsleep = Double(hoursAsleep) + Double(minutesAsleep)/60
             let newData = DailyData(context: viewContext)
             newData.date = selectedDate
             newData.screentime = Double(time) ?? 0
