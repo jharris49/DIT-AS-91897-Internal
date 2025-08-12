@@ -150,10 +150,12 @@ struct InputView: View {
                 }
                 if confirmBanner {
                     VStack{
+                        Spacer()
                         ZStack{
                             RoundedRectangle(cornerRadius: 8)
                                 .fill(Color.gray.opacity(0.199))
                                 .frame(width: 130, height: 100)
+                                .padding()
                             VStack {
                                 Text("Data Saved")
                                     .foregroundStyle(.gray)
@@ -161,6 +163,7 @@ struct InputView: View {
                                     .foregroundStyle(.gray)
                             }
                         }
+                        .padding(80)
                     }
                 }
             }
@@ -400,14 +403,29 @@ struct DailyAnalysis: View {
             }
             return Double(total)
         }
+        var otherHours: Double {
+            var other = 24 - screenTimeDouble - sleepTimeDouble - averageNecessities
+            
+            if other < 0 {
+                return 0.0
+            }
+            return other
+        }
         
-        var averageNecessities: Double = 2.5
+        var averageNecessities: Double {
+            var hours = sleepTimeDouble + screenTimeDouble + 2.5
+            
+            if hours >= 24 {
+                return 0.0
+            }
+            return 2.5
+        }
         
         var pCatagories: [pChartData] { [
             .init(category: "Screentime", hours: screenTimeDouble),
             .init(category: "Sleep", hours: sleepTimeDouble),
             .init(category: "Necessities", hours: averageNecessities),
-            .init(category: "Other", hours: 24 - screenTimeDouble - sleepTimeDouble - averageNecessities)
+            .init(category: "Other", hours: otherHours)
         ]
         }
         
@@ -437,12 +455,14 @@ struct DailyAnalysis: View {
                     )
                     
                     .foregroundStyle(by: .value(Text(verbatim: category.category), category.category))
-                    .annotation(position: .overlay) {
-                        Text("\(String(format: "%.0f", category.hours * 100/24))% (\(String(format: "%.1f", category.hours))h)")
-                            .foregroundStyle(.white)
-                            .font(.system(size:12))
+                        .annotation(position: .overlay) {
+                            if category.hours > 0 {
+                            Text("\(String(format: "%.0f", category.hours * 100/24))% (\(String(format: "%.1f", category.hours))h)")
+                                .foregroundStyle(.white)
+                                .font(.system(size:12))
+                        }
+                        
                     }
-                    
                 }
                 .padding(.bottom, -10)
             }
