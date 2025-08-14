@@ -72,7 +72,45 @@ struct InputView: View {
         Double(hoursAsleep) + Double(minutesAsleep)/60
     }
     
+    
+    @FetchRequest(
+        sortDescriptors: [NSSortDescriptor(keyPath: \DailyData.date, ascending: true)]
+    ) var allData: FetchedResults<DailyData>
+    @State private var wantedDate = Date()
+    
+    var todayData: [DailyData] {
+        let calendar = Calendar.current
+        let start = calendar.startOfDay(for: selectedDate)
+        let end = calendar.date(byAdding: .day, value: 1, to: start)!
+        
+        return allData.filter { entry in
+            if let date = entry.date {
+                return date >= start && date < end
+            }
+            return false
+        }
+    }
+    
+    var screenTimeToday: [DailyData] {
+        return todayData.filter { data in
+            return data.screentime > -1
+        }
+    }
+    
+    var sleepTimeToday: [DailyData] {
+        return todayData.filter { data in
+            return data.sleeptime > -1
+        }
+    }
+    
     var body: some View {
+        
+        var isData: Bool {
+            if screenTimeToday.isEmpty && sleepTimeToday.isEmpty {
+                return false
+            }
+            return true
+        }
         
         var notDigit: Bool {
             for character in time {
@@ -119,7 +157,9 @@ struct InputView: View {
                             }
                         }
                         Button {
-                            if !invalidHours {
+                            if isData {
+                                showErrorAlert = true
+                            }else if !invalidHours {
                                 showConfirmAlert = true
                             } else {
                                 showErrorAlert = true
@@ -378,7 +418,7 @@ struct DailyAnalysis: View {
         
         var screenTimeToday: [DailyData] {
             return todayData.filter { data in
-                return data.screentime > 0
+                return data.screentime > -1
             }
         }
         
@@ -392,7 +432,7 @@ struct DailyAnalysis: View {
         
         var sleepTimeToday: [DailyData] {
             return todayData.filter { data in
-                return data.sleeptime > 0
+                return data.sleeptime > -1
             }
         }
         
@@ -405,7 +445,7 @@ struct DailyAnalysis: View {
         }
         
         var otherHours: Double {
-            var other = 24 - screenTimeDouble - sleepTimeDouble - averageNecessities
+            let other = 24 - screenTimeDouble - sleepTimeDouble - averageNecessities
             
             if other < 0 {
                 return 0.0
@@ -414,7 +454,7 @@ struct DailyAnalysis: View {
         }
         
         var averageNecessities: Double {
-            var hours = sleepTimeDouble + screenTimeDouble + 2.5
+            let hours = sleepTimeDouble + screenTimeDouble + 2.5
             
             if hours >= 24 {
                 return 0.0
@@ -430,8 +470,8 @@ struct DailyAnalysis: View {
         ]
         }
         
-        var dataCheck: Bool {
-            if screenTimeDouble == 0 && sleepTimeDouble == 0 {
+        var isData: Bool {
+            if screenTimeToday.isEmpty && sleepTimeToday.isEmpty {
                 return false
             }
             return true
@@ -457,7 +497,7 @@ struct DailyAnalysis: View {
             }
             VStack(spacing: 1) {
                 Spacer()
-                if dataCheck {
+                if isData {
                 Chart(pCatagories) { category in
                     SectorMark(
                         angle: .value(Text(verbatim: category.category), category.hours), innerRadius: .ratio(0.5),
