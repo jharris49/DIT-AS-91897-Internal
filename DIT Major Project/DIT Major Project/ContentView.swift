@@ -403,6 +403,7 @@ struct DailyAnalysis: View {
             }
             return Double(total)
         }
+        
         var otherHours: Double {
             var other = 24 - screenTimeDouble - sleepTimeDouble - averageNecessities
             
@@ -429,6 +430,14 @@ struct DailyAnalysis: View {
         ]
         }
         
+        var dataCheck: Bool {
+            if screenTimeDouble == 0 && sleepTimeDouble == 0 {
+                return false
+            }
+            return true
+        }
+        
+        
         return VStack {
             HStack{
                 Button {
@@ -447,7 +456,8 @@ struct DailyAnalysis: View {
                 }
             }
             VStack(spacing: 1) {
-                
+                Spacer()
+                if dataCheck {
                 Chart(pCatagories) { category in
                     SectorMark(
                         angle: .value(Text(verbatim: category.category), category.hours), innerRadius: .ratio(0.5),
@@ -455,8 +465,8 @@ struct DailyAnalysis: View {
                     )
                     
                     .foregroundStyle(by: .value(Text(verbatim: category.category), category.category))
-                        .annotation(position: .overlay) {
-                            if category.hours > 0 {
+                    .annotation(position: .overlay) {
+                        if category.hours > 0 {
                             Text("\(String(format: "%.0f", category.hours * 100/24))% (\(String(format: "%.1f", category.hours))h)")
                                 .foregroundStyle(.white)
                                 .font(.system(size:12))
@@ -466,15 +476,26 @@ struct DailyAnalysis: View {
                 }
                 .padding(.bottom, -10)
             }
+                else {
+                    ZStack{
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(Color.gray.opacity(0.199))
+                            .frame(width: 200, height: 150)
+                            .padding()
+                        VStack {
+                            Text("No Data Found")
+                                .foregroundStyle(.gray)
+                                .padding(5)
+                            Image(systemName: "exclamationmark.arrow.triangle.2.circlepath")
+                                .foregroundStyle(.gray)
+                                .font(.system(size: 30))
+                        }
+                        .font(.title3)
+                    }
+                }
+                Spacer()
+        }
             .padding(35)
-            
-            /*
-             List(todayData) { entry in
-             Text("Hours: \(String(format: "%.1f", entry.hours))")
-             Text("Date: \(entry.date?.formatted() ?? "Unknown")")
-             }
-             */
-            
             .navigationTitle("Daily Insights")
         }
     }
