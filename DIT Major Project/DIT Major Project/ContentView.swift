@@ -36,7 +36,7 @@ struct InputView: View {
     @Binding var selectedTab: Int
     @Binding var time: String
     @State private var showTabs = true
-    @State private var message = ""
+    @State private var alertMessage = ""
     @State private var selectedDate = Date()
     @State var showErrorAlert = false
     @State var showConfirmAlert = false
@@ -158,11 +158,13 @@ struct InputView: View {
                         }
                         Button {
                             if isData {
+                                alertMessage = "There is already data saved to this day"
                                 showErrorAlert = true
                             }else if !invalidHours {
                                 showConfirmAlert = true
                             } else {
                                 showErrorAlert = true
+                                alertMessage = "Invalid Hours"
                             }
                         } label: {
                             Text("Confirm")
@@ -183,7 +185,7 @@ struct InputView: View {
                         }
                     }
                 }
-                .alert("Invalid Hours", isPresented: $showErrorAlert) {
+                .alert(alertMessage, isPresented: $showErrorAlert) {
                     Button("Ok", role: .cancel) {}
                 } message: {
                     Text("Please enter a valid value")
@@ -212,7 +214,7 @@ struct InputView: View {
     func addData() {
             let newData = DailyData(context: viewContext)
             newData.date = selectedDate
-            newData.screentime = Double(time) ?? 0
+            newData.screentime = Double(time) ?? -1
             newData.sleeptime = totalTimeAsleep
             do {
                 try viewContext.save()
@@ -243,7 +245,7 @@ struct mainToolbar: ToolbarContent {
 struct pChartData: Identifiable {
     var id = UUID()
     var category: String
-    var hours: Double
+    var dailyHours: Double
 }
 
 struct DataView: View {
@@ -386,11 +388,74 @@ struct FunFacts: View{
     }
 }
 
-struct DataTrends: View{
-    var body: some View{
-        Text("Trends coming")
-    }
+struct lifetimeUsageData: Identifiable {
+    let id = UUID()
+    let graphDate: String
+    let rawDate: Date
+    let hours: Double
 }
+
+
+struct DataTrends: View{
+    @Environment(\.managedObjectContext) private var viewContext
+    @FetchRequest(
+        sortDescriptors: [NSSortDescriptor(keyPath: \DailyData.date, ascending: true)]
+    ) var allData: FetchedResults<DailyData>
+    
+    @State var startDate = Calendar.current.date(byAdding: .day, value: -7, to: Date())!
+    @State var endDate = Calendar.current.date(byAdding: .day, value: 7, to: Date())!
+    
+    var wantedData: [DailyData] {
+        allData.filter { data in
+            return data.screentime > -1 && data.date != nil
+        }
+    }
+    
+    var lineChartData: [lifetimeUsageData]{
+        let df = DateFormatter()
+        df.dateFormat = "d MMM"
+        return wantedData.map {
+            lifetimeUsageData(graphDate: df.string(from: $0.date!), rawDate: $0.date!, hours: $0.screentime)
+        }
+    }
+    
+    var filteredData: [lifetimeUsageData]{
+        lineChartData.filter {entry in
+            entry.rawDate >= startDate && entry.rawDate <= endDate
+        }
+    }
+    
+    var body: some View {
+        VStack {
+                DatePicker("Start Date",
+                           selection: $startDate ,
+                           displayedComponents: [.date])
+                .padding(5)
+                DatePicker("End Date",
+                           selection: $endDate,
+                           displayedComponents: [.date])
+                .padding(5)
+                Chart {
+                    ForEach(filteredData) { data in
+                        LineMark(
+                            x: .value("Day", data.graphDate as String),
+                            y: .value("Hours", data.hours)
+                        )
+                        AreaMark( x: .value("Day", data.graphDate as String),
+                                  y: .value("Hours", data.hours)
+                        )
+                        .foregroundStyle(.blue.opacity(0.2))
+                        PointMark(
+                            x: .value("Day", data.graphDate as String),
+                            y: .value("Hours", data.hours)
+                        )
+                    }
+                }
+                .chartYScale(domain: 0...24)
+            }
+        }
+    }
+
 
 
 struct DailyAnalysis: View {
@@ -463,10 +528,10 @@ struct DailyAnalysis: View {
         }
         
         var pCatagories: [pChartData] { [
-            .init(category: "Screentime", hours: screenTimeDouble),
-            .init(category: "Sleep", hours: sleepTimeDouble),
-            .init(category: "Necessities", hours: averageNecessities),
-            .init(category: "Other", hours: otherHours)
+            .init(category: "Screentime", dailyHours: screenTimeDouble),
+            .init(category: "Sleep", dailyHours: sleepTimeDouble),
+            .init(category: "Necessities", dailyHours: averageNecessities),
+            .init(category: "Other", dailyHours: otherHours)
         ]
         }
         
@@ -500,14 +565,14 @@ struct DailyAnalysis: View {
                 if isData {
                 Chart(pCatagories) { category in
                     SectorMark(
-                        angle: .value(Text(verbatim: category.category), category.hours), innerRadius: .ratio(0.5),
+                        angle: .value(Text(verbatim: category.category), category.dailyHours), innerRadius: .ratio(0.5),
                         angularInset: 2
                     )
                     
                     .foregroundStyle(by: .value(Text(verbatim: category.category), category.category))
                     .annotation(position: .overlay) {
-                        if category.hours > 0 {
-                            Text("\(String(format: "%.0f", category.hours * 100/24))% (\(String(format: "%.1f", category.hours))h)")
+                        if category.dailyHours > 0 {
+                            Text("\(String(format: "%.0f", category.dailyHours * 100/24))% (\(String(format: "%.1f", category.dailyHours))h)")
                                 .foregroundStyle(.white)
                                 .font(.system(size:12))
                         }
@@ -567,7 +632,7 @@ struct HelpView: View {
     let context = PersistenceController.preview.container.viewContext
     let sample = DailyData(context: context)
     let sample2 = DailyData(context: context)
-    let components = DateComponents(year: 2025, month: 7, day: 29)
+    let components = DateComponents(year: 2025, month: 8, day: 20)
     sample.date = Date()
     sample.screentime = Double(5)
     sample2.date = Calendar.current.date(from: components)!
