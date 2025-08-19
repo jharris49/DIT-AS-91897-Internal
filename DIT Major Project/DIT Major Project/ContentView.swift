@@ -13,7 +13,13 @@ import CoreData
 struct HomeView: View {
     @State var selectedTab = 0
     @State var time = ""
-    var body: some View {
+    @State var showStoragePermissionAlert = false
+    @State var storagePermission = false
+    @State var askedPermissionOnce = false
+    //@AppStorage("storagePermission") var storagePermission = false
+    //@AppStorage("askedPermissionOnce") var askedPermissionOnce = false
+    
+    var homeViewTabs: some View {
         // Creates a a tabview, this is the options on the bottom
         TabView (selection: $selectedTab) {
             InputView(selectedTab: $selectedTab, time: $time)
@@ -28,8 +34,84 @@ struct HomeView: View {
                 .tag(1)
         }
     }
-}
+    var body: some View {
+        VStack{
+            if storagePermission || !askedPermissionOnce {
+                homeViewTabs
+            } else {
+                BlockedView()
+                }
+        }
+            .tint(.indigo)
+            .onAppear{
+                if  !askedPermissionOnce {
+                    showStoragePermissionAlert = true
+                }
+            }
+            .alert("Data Storage Permission", isPresented: $showStoragePermissionAlert){
+                Button("Allow"){
+                    storagePermission = true
+                    askedPermissionOnce = true
+                }
+                Button("Deny"){
+                    storagePermission = false
+                    askedPermissionOnce = true
+                }
+            } message: {
+                Text("Do you allow this app to store your screen time and sleep time data locally?")
+            }
+        }
+    }
 
+struct BlockedView: View {
+    @State var showSettings = false
+    var body: some View {
+        NavigationStack {
+                ZStack(alignment: .top){
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(Color.gray.opacity(0.199))
+                    .frame(width: 350, height: 380)
+                VStack{
+                    Image(systemName: "exclamationmark.shield.fill")
+                        .foregroundStyle(.gray)
+                        .font(.system(size: 65, weight: .bold, design: .default))
+                    Text("Sorry, this app cannot be used without this permission. Please go to the settings top left and allow this app to access your device storage if you wish to use it.")
+                        .multilineTextAlignment(.center)
+                        .padding(.top, 3)
+                        .padding(.horizontal, 50)
+                        .font(.title3)
+                        .foregroundStyle(.gray)
+                    
+                    Button("Open Settings Here"){
+                        showSettings.toggle()
+                    }
+                    .font(.title2)
+                    .padding(15)
+                    .navigationDestination(isPresented: $showSettings) {
+                        SettingsView()
+                    }
+                    Text("Or")
+                        .multilineTextAlignment(.center)
+                        .padding(.top, 3)
+                        .padding(.horizontal, 50)
+                        .font(.title3)
+                        .foregroundStyle(.gray)
+                    Button("Close the app"){
+                        UIApplication.shared.perform(#selector(NSXPCConnection.suspend))
+                    }
+                    .font(.title2)
+                    .foregroundStyle(.red)
+                    .padding(15)
+                }
+                .frame(maxHeight: 550, alignment: .top)
+            }
+            Spacer()
+        .navigationTitle("Permission Required")
+        .toolbar{ mainToolbar()}
+        .ignoresSafeArea()
+        }
+    }
+}
 
 struct InputView: View {
     @Environment(\.managedObjectContext) private var viewContext
@@ -43,6 +125,7 @@ struct InputView: View {
     @State var confirmBanner = false
     @State var hoursAsleep = 8
     @State var minutesAsleep = 0
+    @FocusState var keyBoardClosed: Bool
     
     private var sleepPicker: some View {
         HStack {
@@ -144,6 +227,21 @@ struct InputView: View {
                             LabeledContent {
                                 TextField("Screentime (Hours)", text: $time)
                                     .multilineTextAlignment(.trailing)
+                                    .keyboardType(.decimalPad)
+                                    .focused($keyBoardClosed)
+                                    .submitLabel(.done)
+                                    .onSubmit{
+                                        keyBoardClosed = false
+                                    }
+                                    .toolbar {
+                                        ToolbarItemGroup(placement: .keyboard)
+                                        {
+                                            Spacer()
+                                            Button("Done") {
+                                                keyBoardClosed = false
+                                            }
+                                        }
+                                    }
                             } label: {
                                 Text("Hours")
                             }
@@ -162,11 +260,13 @@ struct InputView: View {
                                 showErrorAlert = true
                             }else if !invalidHours {
                                 showConfirmAlert = true
+                                keyBoardClosed = false
                             } else {
                                 showErrorAlert = true
                                 alertMessage = "Invalid Hours"
                             }
-                        } label: {
+                        }
+                        label: {
                             Text("Confirm")
                         }.frame(maxWidth: .infinity)
                     }
@@ -466,6 +566,12 @@ struct DailyAnalysis: View {
     ) var allData: FetchedResults<DailyData>
     @State private var wantedDate = Date()
     
+    @AppStorage("averageNecessitiesHours") var averageNecessitiesHours = 2.0
+    @AppStorage("averageNecessitiesTenths") var averageNecessitiesTenths = 5.0
+    
+    var averageNecessitiesOverride: Double {
+        averageNecessitiesHours + averageNecessitiesTenths/10
+    }
     
     var body: some View {
         var todayData: [DailyData] {
@@ -519,12 +625,12 @@ struct DailyAnalysis: View {
         }
         
         var averageNecessities: Double {
-            let hours = sleepTimeDouble + screenTimeDouble + 2.5
+            let hours = sleepTimeDouble + screenTimeDouble + averageNecessitiesOverride
             
             if hours >= 24 {
                 return 0.0
             }
-            return 2.5
+            return averageNecessitiesOverride
         }
         
         var pCatagories: [pChartData] { [
@@ -608,12 +714,39 @@ struct DailyAnalysis: View {
 
 
 struct SettingsView: View {
+    @AppStorage("darkMode") var darkMode = false
+    @AppStorage("averageNecessitiesHours") var averageNecessitiesHours = 2.0
+    @AppStorage("averageNecessitiesTenths") var averageNecessitiesTenths = 5.0
+    
     var body: some View {
         VStack{
-            Text("")
-            .navigationTitle("Settings")
+            Form {
+                Section ("Appearence") {
+                    Toggle("Dark Mode", isOn: $darkMode)
+                }
+                Section ("Daily Analysis") {
+                    LabeledContent(content: {
+                        HStack{
+                            Picker("", selection: $averageNecessitiesHours){
+                                ForEach(0..<25) { hour in
+                                    Text("\(hour)").tag(Double(hour))
+                                }
+                            }
+                            Text(".")
+                            Picker("", selection: $averageNecessitiesTenths){
+                                ForEach(0..<10) { tenth in
+                                    Text("\(tenth)").tag(Double(tenth))
+                                }
+                            }
+                        }
+                    }, label: { Text("Daily Necessities")
+                    Text("(average: 2.5 hours)")})
+                    .pickerStyle(.wheel)
+                }
+                .preferredColorScheme(darkMode ? .dark : .light)
+            }
         }
-        
+        .navigationTitle("Settings")
     }
 }
 
