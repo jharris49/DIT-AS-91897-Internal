@@ -14,10 +14,8 @@ struct HomeView: View {
     @State var selectedTab = 0
     @State var time = ""
     @State var showStoragePermissionAlert = false
-    @State var storagePermission = false
-    @State var askedPermissionOnce = false
-    //@AppStorage("storagePermission") var storagePermission = false
-    //@AppStorage("askedPermissionOnce") var askedPermissionOnce = false
+    @AppStorage("storagePermission") var storagePermission = false
+    @AppStorage("askedPermissionOnce") var askedPermissionOnce = false
     
     var homeViewTabs: some View {
         // Creates a a tabview, this is the options on the bottom
@@ -75,7 +73,7 @@ struct BlockedView: View {
                     Image(systemName: "exclamationmark.shield.fill")
                         .foregroundStyle(.gray)
                         .font(.system(size: 65, weight: .bold, design: .default))
-                    Text("Sorry, this app cannot be used without this permission. Please go to the settings top left and allow this app to access your device storage if you wish to use it.")
+                    Text("Sorry, this app cannot be used without this permission. Please go to the settings and allow this app to access your device storage if you wish to use it.")
                         .multilineTextAlignment(.center)
                         .padding(.top, 3)
                         .padding(.horizontal, 50)
@@ -490,7 +488,6 @@ struct FunFacts: View{
 
 struct lifetimeUsageData: Identifiable {
     let id = UUID()
-    let graphDate: String
     let rawDate: Date
     let hours: Double
 }
@@ -505,56 +502,103 @@ struct DataTrends: View{
     @State var startDate = Calendar.current.date(byAdding: .day, value: -7, to: Date())!
     @State var endDate = Calendar.current.date(byAdding: .day, value: 7, to: Date())!
     
-    var wantedData: [DailyData] {
-        allData.filter { data in
-            return data.screentime > -1 && data.date != nil
-        }
-    }
-    
     var lineChartData: [lifetimeUsageData]{
-        let df = DateFormatter()
-        df.dateFormat = "d MMM"
-        return wantedData.map {
-            lifetimeUsageData(graphDate: df.string(from: $0.date!), rawDate: $0.date!, hours: $0.screentime)
+        return allData.compactMap { entry in
+            guard let date = entry.date, entry.screentime >= 0 else {
+                return nil
+            }
+            
+            guard date >= startDate && date <= endDate else {
+                return nil
+            }
+            return lifetimeUsageData(rawDate: date, hours: entry.screentime)
         }
     }
     
-    var filteredData: [lifetimeUsageData]{
-        lineChartData.filter {entry in
-            entry.rawDate >= startDate && entry.rawDate <= endDate
+    var rangeAverage: Double {
+        var counter = 0
+        var total: Double = 0
+        
+        for entry in lineChartData {
+            counter += 1
+            total += entry.hours
         }
+        return total / Double(counter)
     }
     
     var body: some View {
         VStack {
-                DatePicker("Start Date",
-                           selection: $startDate ,
-                           displayedComponents: [.date])
-                .padding(5)
-                DatePicker("End Date",
-                           selection: $endDate,
-                           displayedComponents: [.date])
-                .padding(5)
-                Chart {
-                    ForEach(filteredData) { data in
-                        LineMark(
-                            x: .value("Day", data.graphDate as String),
-                            y: .value("Hours", data.hours)
-                        )
-                        AreaMark( x: .value("Day", data.graphDate as String),
-                                  y: .value("Hours", data.hours)
-                        )
-                        .foregroundStyle(.blue.opacity(0.2))
-                        PointMark(
-                            x: .value("Day", data.graphDate as String),
-                            y: .value("Hours", data.hours)
-                        )
+            List{
+                Section(""){
+                    DatePicker("Start Date",
+                               selection: $startDate ,
+                               displayedComponents: [.date])
+                    DatePicker("End Date",
+                               selection: $endDate,
+                               displayedComponents: [.date])
+                    Button {
+                        startDate = Calendar.current.date(byAdding: .day, value: -7, to: Date())!
+                        endDate = Calendar.current.date(byAdding: .day, value: 7, to: Date())!
+                    } label: {
+                        Text("Reset to Default Range")
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+                Section(""){
+                    if !lineChartData.isEmpty {
+                        Chart(lineChartData) { data in
+                            LineMark(
+                                x: .value("Day", data.rawDate),
+                                y: .value("Hours", data.hours)
+                            )
+                            .interpolationMethod(.catmullRom)
+                            AreaMark(x: .value("Day", data.rawDate),
+                                     y: .value("Hours", data.hours)
+                            )
+                            .foregroundStyle(.indigo.opacity(0.2))
+                            .interpolationMethod(.catmullRom)
+                            PointMark(
+                                x: .value("Day", data.rawDate),
+                                y: .value("Hours", data.hours)
+                            )
+                            .symbolSize(25)
+                            RuleMark(y: .value("avg", rangeAverage))
+                                .lineStyle(StrokeStyle(lineWidth: 1, dash: [5]))
+                                .foregroundStyle(.gray)
+                                .annotation(alignment: .topLeading) {
+                                        Text("avg")
+                                            .font(.caption)
+                                            .foregroundStyle(.gray)
+                                    }
+                        }
+                        .frame(maxHeight: 600)
+                        .aspectRatio(0.9, contentMode: .fit )
+                        .chartYAxis {
+                            AxisMarks(values: [0, 5, 10, 15, 20, 24]){ value in
+                                AxisGridLine()
+                                AxisValueLabel()
+                            }
+                        }
+                        .chartXScale(domain: startDate...endDate)
+                        .chartXAxisLabel(position: .bottom, alignment:.center){
+                            Text("Date")
+                                .font(.subheadline)
+                        }
+                        .chartYAxisLabel(position: .trailing, alignment:.center){
+                            Text("Hours")
+                                .font(.subheadline)
+                        }
+                    } else {
+                        Text("No data to display. Please input some data.")
+                            .foregroundStyle(.secondary)
+                            .padding()
                     }
                 }
-                .chartYScale(domain: 0...24)
             }
         }
+        .navigationTitle("Lifetime Usage")
     }
+}
 
 
 
@@ -678,7 +722,7 @@ struct DailyAnalysis: View {
                     .foregroundStyle(by: .value(Text(verbatim: category.category), category.category))
                     .annotation(position: .overlay) {
                         if category.dailyHours > 0 {
-                            Text("\(String(format: "%.0f", category.dailyHours * 100/24))% (\(String(format: "%.1f", category.dailyHours))h)")
+                            Text("\(String(format: "%.0f", category.dailyHours * 100/24))%\n(\(String(format: "%.1f", category.dailyHours))h)")
                                 .foregroundStyle(.white)
                                 .font(.system(size:12))
                         }
@@ -718,6 +762,8 @@ struct SettingsView: View {
     @AppStorage("averageNecessitiesHours") var averageNecessitiesHours = 2.0
     @AppStorage("averageNecessitiesTenths") var averageNecessitiesTenths = 5.0
     
+    @AppStorage("storagePermission") var storagePermission = false
+    
     var body: some View {
         VStack{
             Form {
@@ -740,10 +786,13 @@ struct SettingsView: View {
                             }
                         }
                     }, label: { Text("Daily Necessities")
-                    Text("(average: 2.5 hours)")})
+                        Text("(average: 2.5 hours)")})
                     .pickerStyle(.wheel)
                 }
                 .preferredColorScheme(darkMode ? .dark : .light)
+                Section("Permissions"){
+                    Toggle("Device Storage", isOn: $storagePermission)
+                }
             }
         }
         .navigationTitle("Settings")
@@ -765,10 +814,10 @@ struct HelpView: View {
     let context = PersistenceController.preview.container.viewContext
     let sample = DailyData(context: context)
     let sample2 = DailyData(context: context)
-    let components = DateComponents(year: 2025, month: 8, day: 20)
+    let samplecomponents1 = DateComponents(year: 2025, month: 8, day: 19)
     sample.date = Date()
     sample.screentime = Double(5)
-    sample2.date = Calendar.current.date(from: components)!
+    sample2.date = Calendar.current.date(from: samplecomponents1)!
     sample2.screentime = Double(10)
        
     return HomeView()
