@@ -788,6 +788,12 @@ struct SettingsView: View {
                     }, label: { Text("Daily Necessities")
                         Text("(average: 2.5 hours)")})
                     .pickerStyle(.wheel)
+                    Button{
+                        averageNecessitiesHours = 2.0
+                        averageNecessitiesTenths = 5.0
+                    } label: {
+                        Text("Reset to Default")
+                    }.frame(maxWidth: .infinity)
                 }
                 .preferredColorScheme(darkMode ? .dark : .light)
                 Section("Permissions"){
@@ -800,11 +806,53 @@ struct SettingsView: View {
 }
 
 
-
+//The paragraphs and text in the help menu were created with AI, all of the code is made by me though. 
 struct HelpView: View {
+    @AppStorage("showGettingStarted") var showGettingStarted = true
     var body: some View {
-        VStack{
-            Text("")
+        NavigationStack {
+            Form {
+                DisclosureGroup("Getting Started", isExpanded: $showGettingStarted) {
+                    Text("Enter data in the input data page to begin saving and then viewing insights. \n\nTo use this app, you need to allow local storage access. Without it, data cannot be saved. If you deny permission the first time, you can enable it later in Settings.")
+                        .font(.body)
+                }
+                
+                DisclosureGroup("Entering Data"){
+                    Text("Enter your daily screen time in hours. You can also record your sleep using the hour/minute picker. Make sure the total of screen time and sleep doesn’t exceed 24 hours. You can't enter data twice for the same day. Be careful when saving data, you can't edit it once confirmed. Use the **Confirm** button to save.")
+                        .font(.body)
+                }
+                
+                DisclosureGroup("Daily Analysis"){
+                    Text("This page shows a pie chart of your day split into Screen Time, Sleep, Necessities (set in Settings), and Other. Use the arrows or date picker to switch between days.")
+                        .font(.body)
+                }
+                
+                DisclosureGroup("Lifetime Insights"){
+                    Text("See your screen time over a chosen date range. The graph includes an average line to help compare trends. Adjust the date range with the pickers or reset to the default one-week view.")
+                        .font(.body)
+                }
+                
+                DisclosureGroup("Fun Facts"){
+                    Text("Based on your daily average, you’ll see a fun fact that correlates tou your expected screen time over the next x amount of time.")
+                        .font(.body)
+                }
+                
+                DisclosureGroup("Settings Menu"){
+                    Text("• **Dark Mode**: Toggle between light and dark theme.\n• **Daily Necessities**: Set the average hours you spend on necessities (work, study, chores, bathroom). This affects the Daily Analysis pie chart.\n• **Device Storage**: Enable or disable permission to save your data.")
+                        .font(.body)
+                }
+                DisclosureGroup("Other Tips"){
+                    Text("• Enter data consistently for the best insights.\n• Use Daily Analysis to spot imbalances.\n• Compare long-term trends in Lifetime Usage.\n\nIf you experience issues, try resetting permissions in Settings or restarting the app. Or contact us")
+                        .font(.body)
+                }
+                Section {
+                } footer: {
+                    Link("Contact Us", destination: URL(string: "mailto:22jharris@wakatipu.school.nz?subject=App%20Support")!)
+                        .font(.footnote)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                    
+                }
+            }
             .navigationTitle("Help")
         }
     }
