@@ -806,7 +806,7 @@ struct SettingsView: View {
 }
 
 
-//The paragraphs and text in the help menu were created with AI, all of the code is made by me though. 
+//The paragraphs and text in the help menu were created with AI, all of the code is made by me though.
 struct HelpView: View {
     @AppStorage("showGettingStarted") var showGettingStarted = true
     var body: some View {
