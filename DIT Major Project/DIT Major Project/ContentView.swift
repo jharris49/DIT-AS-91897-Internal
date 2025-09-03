@@ -16,6 +16,7 @@ struct HomeView: View {
     @State var showStoragePermissionAlert = false
     @AppStorage("storagePermission") var storagePermission = false
     @AppStorage("askedPermissionOnce") var askedPermissionOnce = false
+    @AppStorage("darkMode") var darkMode = false
     
     var homeViewTabs: some View {
         // Creates a a tabview, this is the options on the bottom
@@ -58,6 +59,7 @@ struct HomeView: View {
             } message: {
                 Text("Do you allow this app to store your screen time and sleep time data locally?")
             }
+            .preferredColorScheme(darkMode ? .dark : .light)
         }
     }
 
@@ -68,12 +70,12 @@ struct BlockedView: View {
                 ZStack(alignment: .top){
                 RoundedRectangle(cornerRadius: 8)
                     .fill(Color.gray.opacity(0.199))
-                    .frame(width: 350, height: 380)
+                    .frame(width: 350, height: 400)
                 VStack{
                     Image(systemName: "exclamationmark.shield.fill")
                         .foregroundStyle(.gray)
                         .font(.system(size: 65, weight: .bold, design: .default))
-                    Text("Sorry, this app cannot be used without this permission. Please go to the settings and allow this app to access your device storage if you wish to use it.")
+                    Text("Sorry, this app cannot be used without this permission. Please go to settings and allow this app to access your device storage if you wish to use it.")
                         .multilineTextAlignment(.center)
                         .padding(.top, 3)
                         .padding(.horizontal, 50)
@@ -103,10 +105,10 @@ struct BlockedView: View {
                 }
                 .frame(maxHeight: 550, alignment: .top)
             }
+            .padding(.top, 20)
             Spacer()
         .navigationTitle("Permission Required")
         .toolbar{ mainToolbar()}
-        .ignoresSafeArea()
         }
     }
 }
@@ -356,7 +358,6 @@ struct DataView: View {
                     } label: {
                         Text("Daily Analysis")
                             .font(.title2)
-                        // Image(systemName: "24.circle.fill")
                     }
                 }
                 .frame(height: 150)
@@ -367,7 +368,6 @@ struct DataView: View {
                     } label: {
                         Text("Lifetime Usage")
                             .font(.title2)
-                        // Image(systemName: "24.circle.fill")
                     }
                 }
                 .frame(height: 150)
@@ -378,7 +378,6 @@ struct DataView: View {
                     } label: {
                         Text("Fun Facts")
                             .font(.title2)
-                        // Image(systemName: "24.circle.fill")
                     }
                 }
                 .frame(height: 150)
@@ -431,58 +430,87 @@ struct FunFacts: View{
     //Dictionary ranges and items for fun facts were made with AI
     let funFacts: [ClosedRange<Double>: [String]] = [
         0.0...0.59: [
-                "You barely spend any time on your device, well done!"
-            ],
-            0.6...1.49: [
-                "year you’ll have spent about 600–700 hours — similar to the time [Chad Hurley and Steve Chen](https://en.wikipedia.org/wiki/YouTube) spent building the first prototype of YouTube in 2005.",
-                "year you’ll have spent about 550–650 hours — about the time [Rob Kalin](https://en.wikipedia.org/wiki/Etsy) spent creating the first version of Etsy before launch in 2005.",
-                "year you’ll have spent about 600 hours — comparable to the side‑project work [Stewart Butterfield](https://en.wikipedia.org/wiki/Slack_(software)) put into Slack while it was still part of Tiny Speck’s internal tools."
-            ],
-            1.5...2.99: [
-                "year and a half, you will have spent about as much time as it took to build the base version of [Airbnb](https://en.wikipedia.org/wiki/Brian_Chesky) — roughly 1,300–1,400 hours.",
-                "year you’ll have spent about 839 hours — roughly the time [Kevin Systrom](https://fr.wikipedia.org/wiki/Kevin_Systrom) spent developing Burbn (later Instagram) during 2010 while working full‑time at Nextstop.",
-                "year you’ll have spent about 839 hours — about the time [Ben Silbermann](https://en.wikipedia.org/wiki/Pinterest) spent building Pinterest from mid‑2009 to mid‑2010 before raising seed funding.",
-                "year you’ll have spent about 770 hours — similar to the time [Ryan Hoover](https://www.producthunt.com/@rrhoover) put into launching Product Hunt as an email list and early site."
-            ],
-            3.0...4.99: [
-                "year you’ll have spent about 1,640 hours — roughly how much time [Reed Hastings](https://en.wikipedia.org/wiki/Reed_Hastings) spent iterating Netflix’s streaming platform in its first year.",
-                "year you’ll have spent about 1,277 hours — similar to how [Jack Dorsey](https://en.wikipedia.org/wiki/Jack_Dorsey) prototyped Twitter at Odeo over ~12 months before traction.",
-                "year you’ll have spent about 1,460 hours — close to [Evan Williams](https://en.wikipedia.org/wiki/Evan_Williams_(Internet_entrepreneur))’s effort building Blogger while managing other projects.",
-                "year you’ll have spent about 1,200–1,300 hours — comparable to the early [Dropbox](https://en.wikipedia.org/wiki/Dropbox_(service)) MVP development before YC."
-            ],
-            5.0...7.99: [
-                "year you’ll have spent about 2,190 hours — comparable to [Jeff Bezos](https://en.wikipedia.org/wiki/Jeff_Bezos)’s grind launching Amazon from his garage in its first year.",
-                "year you’ll have spent about 2,373 hours — roughly the early dev hours [Twitter](https://en.wikipedia.org/wiki/Twitter) team spent building scaling features in its first public year.",
-                "year you’ll have spent about 2,555 hours — akin to the energy [Mark Zuckerberg](https://en.wikipedia.org/wiki/Mark_Zuckerberg) put into Facebook’s Harvard dorm‑room year.",
-                "year you’ll have spent about 2,117 hours — comparable to [Jack Dorsey](https://en.wikipedia.org/wiki/Jack_Dorsey)’s early [Square](https://en.wikipedia.org/wiki/Square,_Inc.) prototypes."
-            ],
-            8.0...11.99: [
-                "year you’ll have spent about 3,102 hours — close to [Shigeru Miyamoto](https://en.wikipedia.org/wiki/Shigeru_Miyamoto)’s Nintendo team development of *The Legend of Zelda: Ocarina of Time* (Nintendo 64, 1998).",
-                "year you’ll have spent about 3,285 hours — similar to [J.K. Rowling](https://en.wikipedia.org/wiki/J._K._Rowling)’s full‑time drafting of *Harry Potter and the Philosopher’s Stone*.",
-                "year you’ll have spent about 3,650 hours — comparable to core development for a AAA game like [Grand Theft Auto V](https://en.wikipedia.org/wiki/Grand_Theft_Auto_V).",
-                "year you’ll have spent about 4,015 hours — similar to Apple’s [iPhone](https://en.wikipedia.org/wiki/IPhone) first‑year development sprint."
-            ],
-            12.0...15.99: [
-                "year you’ll have spent about 4,745 hours — like the intense crunch period of a [Triple‑A game](https://en.wikipedia.org/wiki/Video_game_development) in production.",
-                "year you’ll have spent about 5,110 hours — similar to the founder grind scaling [Uber](https://en.wikipedia.org/wiki/Uber) pre‑Series A.",
-                "year you’ll have spent about 4,928 hours — close to the hours devoted by [SpaceX](https://en.wikipedia.org/wiki/SpaceX) engineers during Falcon 1 development.",
-                "year you’ll have spent about 4,453 hours — akin to the [Apple Macintosh](https://en.wikipedia.org/wiki/Macintosh) team’s sprint before launch."
-            ],
-            16.0...20.0: [
-                "year you’ll have spent about 6,205 hours — similar to [Travis Kalanick](https://en.wikipedia.org/wiki/Travis_Kalanick)’s 24/7 startup grind scaling Uber early on.",
-                "year you’ll have spent about 6,570 hours — comparable to [Steve Jobs](https://en.wikipedia.org/wiki/Steve_Jobs)’s late‑night sprints finishing the first Macintosh.",
-                "year you’ll have spent about 6,935 hours — akin to Amazon’s all‑hands‑on‑deck push for Prime shipping rollout.",
-                "year you’ll have spent about 6,388 hours — comparable to [Reddit](https://en.wikipedia.org/wiki/Reddit) founders’ intense first‑year iteration and scaling."
-            ]
-]
+            "You barely spend any time on your device, well done!"
+        ],
+        0.6...1.49: [
+            "year you’ll have spent about **600–700 hours** — similar to the time [Chad Hurley and Steve Chen](https://en.wikipedia.org/wiki/YouTube) spent building the first prototype of YouTube in 2005.",
+            "year you’ll have spent about **550–650 hours** — about the time [Rob Kalin](https://en.wikipedia.org/wiki/Etsy) spent creating the first version of Etsy before launch in 2005.",
+            "year you’ll have spent about **600 hours** — comparable to the side‑project work [Stewart Butterfield](https://en.wikipedia.org/wiki/Slack_(software)) put into Slack while it was still part of Tiny Speck’s internal tools."
+        ],
+        1.5...2.99: [
+            "year and a half, you will have spent about as much time as it took to build the base version of [Airbnb](https://en.wikipedia.org/wiki/Brian_Chesky) — roughly **1,300–1,400 hours**.",
+            "year you’ll have spent about **839 hours** — roughly the time [Kevin Systrom](https://fr.wikipedia.org/wiki/Kevin_Systrom) spent developing Burbn (later Instagram) during 2010 while working full‑time at Nextstop.",
+            "year you’ll have spent about **839 hours** — about the time [Ben Silbermann](https://en.wikipedia.org/wiki/Pinterest) spent building Pinterest from mid‑2009 to mid‑2010 before raising seed funding.",
+            "year you’ll have spent about **770 hours** — similar to the time [Ryan Hoover](https://www.producthunt.com/@rrhoover) put into launching Product Hunt as an email list and early site."
+        ],
+        3.0...4.99: [
+            "year you’ll have spent about **1,640 hours** — roughly how much time [Reed Hastings](https://en.wikipedia.org/wiki/Reed_Hastings) spent iterating Netflix’s streaming platform in its first year.",
+            "year you’ll have spent about **1,277 hours** — similar to how [Jack Dorsey](https://en.wikipedia.org/wiki/Jack_Dorsey) prototyped Twitter at Odeo over ~12 months before traction.",
+            "year you’ll have spent about **1,460 hours** — close to [Evan Williams](https://en.wikipedia.org/wiki/Evan_Williams_(Internet_entrepreneur))’s effort building Blogger while managing other projects.",
+            "year you’ll have spent about **1,200–1,300 hours** — comparable to the early [Dropbox](https://en.wikipedia.org/wiki/Dropbox_(service)) MVP development before YC."
+        ],
+        5.0...7.99: [
+            "year you’ll have spent about **2,190 hours** — comparable to [Jeff Bezos](https://en.wikipedia.org/wiki/Jeff_Bezos)’s grind launching Amazon from his garage in its first year.",
+            "year you’ll have spent about **2,373 hours** — roughly the early dev hours [Twitter](https://en.wikipedia.org/wiki/Twitter) team spent building scaling features in its first public year.",
+            "year you’ll have spent about **2,555 hours** — akin to the energy [Mark Zuckerberg](https://en.wikipedia.org/wiki/Mark_Zuckerberg) put into Facebook’s Harvard dorm‑room year.",
+            "year you’ll have spent about **2,117 hours** — comparable to [Jack Dorsey](https://en.wikipedia.org/wiki/Jack_Dorsey)’s early [Square](https://en.wikipedia.org/wiki/Square,_Inc.) prototypes."
+        ],
+        8.0...11.99: [
+            "year you’ll have spent about **3,102 hours** — close to [Shigeru Miyamoto](https://en.wikipedia.org/wiki/Shigeru_Miyamoto)’s Nintendo team development of *The Legend of Zelda: Ocarina of Time* (Nintendo 64, 1998).",
+            "year you’ll have spent about **3,285 hours** — similar to [J.K. Rowling](https://en.wikipedia.org/wiki/J._K._Rowling)’s full‑time drafting of *Harry Potter and the Philosopher’s Stone*.",
+            "year you’ll have spent about **3,650 hours** — comparable to core development for a AAA game like [Grand Theft Auto V](https://en.wikipedia.org/wiki/Grand_Theft_Auto_V).",
+            "year you’ll have spent about **4,015 hours** — similar to Apple’s [iPhone](https://en.wikipedia.org/wiki/IPhone) first‑year development sprint."
+        ],
+        12.0...15.99: [
+            "year you’ll have spent about **4,745 hours** — like the intense crunch period of a [Triple‑A game](https://en.wikipedia.org/wiki/Video_game_development) in production.",
+            "year you’ll have spent about **5,110 hours** — similar to the founder grind scaling [Uber](https://en.wikipedia.org/wiki/Uber) pre‑Series A.",
+            "year you’ll have spent about **4,928 hours** — close to the hours devoted by [SpaceX](https://en.wikipedia.org/wiki/SpaceX) engineers during Falcon 1 development.",
+            "year you’ll have spent about **4,453 hours** — akin to the [Apple Macintosh](https://en.wikipedia.org/wiki/Macintosh) team’s sprint before launch."
+        ],
+        16.0...20.0: [
+            "year you’ll have spent about **6,205 hours** — similar to [Travis Kalanick](https://en.wikipedia.org/wiki/Travis_Kalanick)’s 24/7 startup grind scaling Uber early on.",
+            "year you’ll have spent about **6,570 hours** — comparable to [Steve Jobs](https://en.wikipedia.org/wiki/Steve_Jobs)’s late‑night sprints finishing the first Macintosh.",
+            "year you’ll have spent about **6,935 hours** — akin to Amazon’s all‑hands‑on‑deck push for Prime shipping rollout.",
+            "year you’ll have spent about **6,388 hours** — comparable to [Reddit](https://en.wikipedia.org/wiki/Reddit) founders’ intense first‑year iteration and scaling."
+        ]
+    ]
     var body: some View {
         let randomFact = funFacts.first(where:{ $0.key.contains(dailyAverage)})?.value.randomElement() ?? "Nothing found"
-            
-        VStack{
-            
-            Text(.init("If you continue averaging \(dailyAverage) hours of screen time per day for the next " + randomFact))
+
+            ZStack{
+                Form{
+                    Section{
+                        VStack {
+                            Text("Did you know?")
+                                .font(.system(size: 30, weight: .medium))
+                            Image(systemName: "sparkles")
+                                .font(.system(size: 45, weight: .semibold))
+                                .foregroundColor(.indigo)
+                                .padding(8)
+                                .padding(.bottom, 15)
+                            Text(.init("If you continue averaging **\(String(format:"%.1f",dailyAverage)) hours** of screen time per day for the next " + randomFact))
+                                .foregroundStyle(.gray)
+                                .padding(.horizontal, 10)
+                        }
+                    }
+                    Section{
+                        VStack{
+                            Text("Based on your Average")
+                                .font(.system(size: 30, weight: .medium))
+                                .multilineTextAlignment(.center)
+                            Image(systemName: "character.book.closed.fill")
+                                .font(.system(size: 45, weight: .semibold))
+                                .foregroundColor(.indigo)
+                                .padding(8)
+                                .padding(.bottom, 15)
+                            Text("Over the next year you will end up spending exactly **\(String(format:"%.1f",dailyAverage * 365)) hours** on a screen.")
+                                .foregroundStyle(.gray)
+                                .padding(.horizontal, 10)
+                        }
+                    }
+            }
+            .navigationTitle("Fun Facts")
         }
-        .navigationTitle("Fun Facts")
     }
 }
 
@@ -566,7 +594,7 @@ struct DataTrends: View{
                                 .lineStyle(StrokeStyle(lineWidth: 1, dash: [5]))
                                 .foregroundStyle(.gray)
                                 .annotation(alignment: .topLeading) {
-                                        Text("avg")
+                                    Text("avg: \(String(format: "%.1f",rangeAverage))")
                                             .font(.caption)
                                             .foregroundStyle(.gray)
                                     }
