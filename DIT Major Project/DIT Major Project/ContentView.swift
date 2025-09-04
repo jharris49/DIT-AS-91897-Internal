@@ -4,6 +4,8 @@
 //
 //  Created by Josh Harris on 03/06/2025.
 //
+// Code for an app that gets and saves user screentime data for data analysis and user awarness through
+// graphs and other insights based on their inputted data. 
 
 import SwiftUI
 import Charts
@@ -63,6 +65,7 @@ struct HomeView: View {
         }
     }
 
+// Creates page that appears if the user denies device storage permission
 struct BlockedView: View {
     @State var showSettings = false
     var body: some View {
@@ -113,6 +116,7 @@ struct BlockedView: View {
     }
 }
 
+// Creates data inputting page
 struct InputView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @Binding var selectedTab: Int
@@ -311,6 +315,7 @@ struct InputView: View {
             }
         }
     }
+    // Saves data to database
     func addData() {
             let newData = DailyData(context: viewContext)
             newData.date = selectedDate
@@ -324,7 +329,7 @@ struct InputView: View {
         }
 }
 
-
+// Creates content and links for help and settings menus
 struct mainToolbar: ToolbarContent {
     var body: some ToolbarContent {
         ToolbarItem(placement: .navigationBarLeading) {
@@ -342,12 +347,14 @@ struct mainToolbar: ToolbarContent {
     }
 }
 
+// Details different data values in pie chart
 struct pChartData: Identifiable {
     var id = UUID()
     var category: String
     var dailyHours: Double
 }
 
+// Creates dashboard where you can navigate to different data insight pages
 struct DataView: View {
     var body: some View {
         NavigationStack{
@@ -388,7 +395,7 @@ struct DataView: View {
     }
 }
 
-
+// Creates and outputs data anlysis and fun facts on the fun facts page
 struct FunFacts: View{
     @Environment(\.managedObjectContext) private var viewContext
     
@@ -514,13 +521,14 @@ struct FunFacts: View{
     }
 }
 
+// Details the different data values for the lifetime usage line chart
 struct lifetimeUsageData: Identifiable {
     let id = UUID()
     let rawDate: Date
     let hours: Double
 }
 
-
+// Creates lifetime usage line chart
 struct DataTrends: View{
     @Environment(\.managedObjectContext) private var viewContext
     @FetchRequest(
@@ -629,7 +637,7 @@ struct DataTrends: View{
 }
 
 
-
+// Creates daily analysis pie chart
 struct DailyAnalysis: View {
     @Environment(\.managedObjectContext) private var viewContext
     
@@ -784,7 +792,7 @@ struct DailyAnalysis: View {
     }
 }
 
-
+// Creates settings view and the changeable options in it
 struct SettingsView: View {
     @AppStorage("darkMode") var darkMode = false
     @AppStorage("averageNecessitiesHours") var averageNecessitiesHours = 2.0
@@ -807,9 +815,15 @@ struct SettingsView: View {
                                 }
                             }
                             Text(".")
-                            Picker("", selection: $averageNecessitiesTenths){
-                                ForEach(0..<10) { tenth in
-                                    Text("\(tenth)").tag(Double(tenth))
+                            if averageNecessitiesHours < 24 {
+                                Picker("", selection: $averageNecessitiesTenths){
+                                    ForEach(0..<10) { tenth in
+                                        Text("\(tenth)").tag(Double(tenth))
+                                    }
+                                }
+                            } else if averageNecessitiesHours == 24 {
+                                Picker("", selection: $averageNecessitiesTenths){
+                                    Text("\(0)").tag(Double(0))
                                 }
                             }
                         }
@@ -835,6 +849,7 @@ struct SettingsView: View {
 
 
 //The paragraphs and text in the help menu were created with AI, all of the code is made by me though.
+// Creates help menu and contents
 struct HelpView: View {
     @AppStorage("showGettingStarted") var showGettingStarted = true
     var body: some View {
@@ -875,7 +890,7 @@ struct HelpView: View {
                 }
                 Section {
                 } footer: {
-                    Link("Contact Us", destination: URL(string: "mailto:22jharris@wakatipu.school.nz?subject=App%20Support")!)
+                    Link("Contact Us", destination: URL(string: "mailto:22jharris@wakatipu.school.nz?subject=Stracker%20App%20Support")!)
                         .font(.footnote)
                         .frame(maxWidth: .infinity, alignment: .center)
                     
@@ -886,6 +901,7 @@ struct HelpView: View {
     }
 }
 
+// Creates preview and auto saved data for testing in the canvas in Xcode
 #Preview {
     let context = PersistenceController.preview.container.viewContext
     let sample = DailyData(context: context)
